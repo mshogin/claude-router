@@ -24,7 +24,7 @@ unalias claude-router claude-router-stop claude-router-watch claude-router-statu
 
 alias claude-router='${CLAUDE_ROUTER_REPO}/bin/run.sh'
 alias claude-router-stop='${CLAUDE_ROUTER_REPO}/bin/stop.sh'
-alias claude-router-watch='tail -f /tmp/claude-router-decisions.log'
+alias claude-router-watch='tail -f "${CLAUDE_ROUTER_CONFIG_DIR}/logs/decisions.log"'
 
 # Loopback health probe that ignores HTTP(S)_PROXY in env. Corporate proxies
 # refuse 127.0.0.1 with 503; without --noproxy '*' the checks below would
@@ -55,6 +55,28 @@ _claude_router_export_env() {
   export API_TIMEOUT_MS=600000
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
   unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
+}
+
+# Friendly check that Claude Code CLI is installed. The router stack can
+# still run without it (it just proxies API calls), but the -shell / -clean
+# launchers need 'claude' on PATH.
+_claude_router_require_claude() {
+  if command -v claude >/dev/null 2>&1; then
+    return 0
+  fi
+  cat <<'EOF' >&2
+[claude-router] 'claude' command not found.
+
+Install Claude Code first, then retry. Quick options:
+  npm i -g @anthropic-ai/claude-code        # Anthropic official CLI
+  brew install --cask claude-code           # macOS Homebrew (if a tap is set up)
+
+Docs: https://docs.anthropic.com/en/docs/claude-code
+
+The router stack itself is running - you can talk to it from your own
+client by pointing ANTHROPIC_BASE_URL to http://localhost:3457.
+EOF
+  return 1
 }
 
 # Per-port lsof - lsof 4.91 on macOS errors out on multi-port `-i :a :b :c`,
@@ -136,6 +158,7 @@ claude-router-down() {
 # instead and run claude yourself with the same flags.
 claude-router-clean() {
   _claude_router_ensure_stack || return 1
+  _claude_router_require_claude || return 1
   _claude_router_export_env
 
   echo "=== claude-router-clean (isolated) ==="
@@ -156,6 +179,7 @@ claude-router-clean() {
 # `claude-router-up` and run plain `claude` yourself.
 claude-router-shell() {
   _claude_router_ensure_stack || return 1
+  _claude_router_require_claude || return 1
   _claude_router_export_env
   claude "$@"
 }

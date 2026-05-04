@@ -50,9 +50,20 @@ if [ -z "${PROMPTLINT_BIN:-}" ]; then
   done
 fi
 PROMPTLINT_BIN="${PROMPTLINT_BIN:-/tmp/promptlint}"
-PROMPTLINT_LOG="/tmp/promptlint.log"
-CCR_LOG="/tmp/ccr-start.log"
-FOOTER_PROXY_LOG="/tmp/claude-router-footer-proxy.log"
+
+# Per-user log/state dirs (avoid /tmp ownership conflicts on multi-user hosts).
+LOGS_DIR="${CLAUDE_ROUTER_LOGS_DIR:-${CONFIG_DIR}/logs}"
+STATE_DIR="${CLAUDE_ROUTER_STATE_DIR:-${CONFIG_DIR}/state}"
+mkdir -p "${LOGS_DIR}" "${STATE_DIR}"
+PROMPTLINT_LOG="${LOGS_DIR}/promptlint.log"
+CCR_LOG="${LOGS_DIR}/ccr-start.log"
+FOOTER_PROXY_LOG="${LOGS_DIR}/footer-proxy.log"
+DECISIONS_LOG="${LOGS_DIR}/decisions.log"
+
+# Pass log/state paths to ccr (which loads lib/router.js) and to the
+# footer-proxy node process so they read/write the same files.
+export CLAUDE_ROUTER_LOGS_DIR="${LOGS_DIR}"
+export CLAUDE_ROUTER_STATE_DIR="${STATE_DIR}"
 
 echo "=== claude-router stack ==="
 
@@ -168,5 +179,5 @@ Logs:
   Routing:      tail -f ${CCR_LOG}
   PromptLint:   tail -f ${PROMPTLINT_LOG}
   Footer-proxy: tail -f ${FOOTER_PROXY_LOG}
-  Decisions:    tail -f /tmp/claude-router-decisions.log
+  Decisions:    tail -f ${DECISIONS_LOG}
 EOF

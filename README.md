@@ -88,7 +88,7 @@ After editing the catalog, regenerate the ccr config and restart:
 | `claude-router-reload` | Stop → start → launch clean Claude inline |
 | `claude-router-clean` | One-shot: stack + Claude with `--bare --strict-mcp-config` |
 | `claude-router-shell` | One-shot: Claude with full personal context (`CLAUDE.md` / hooks / skills WILL be sent to upstream) |
-| `claude-router-watch` | `tail -f /tmp/claude-router-decisions.log` |
+| `claude-router-watch` | `tail -f ~/.claude-router/logs/decisions.log` |
 | `claude-router-status` | Quick "N of 3 services up" check |
 
 **Note on dictation:** macOS Fn+Fn requires `claude` to be a *direct* child of the terminal — not wrapped in a function. `claude-router-up` prepares the shell and returns control so you can type `claude` yourself.
@@ -138,7 +138,7 @@ Each request passes through `lib/router.js` (running inside ccr):
          - max(0, complexity_rank - model.complexity_max_rank) * w_overcapacity
    ```
 4. Pick the argmax. Fall back to `fallback_model` if `promptlint` is unreachable.
-5. Append the decision to `/tmp/claude-router-decisions.log` so footer-proxy can render the right footer.
+5. Append the decision to `~/.claude-router/logs/decisions.log` so footer-proxy can render the right footer.
 
 Tune `strengths` and `scoring_weights` in `models.yaml` until routing matches your preferences. All decisions are logged.
 

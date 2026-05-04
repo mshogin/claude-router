@@ -78,6 +78,17 @@ deps:
 		echo "    pip install --user pyyaml"; \
 		python3 -m pip install --user --quiet pyyaml || pip3 install --user --quiet pyyaml; \
 	}
+	@# claude is a separate dependency (the router can serve any client
+	@# pointed at http://localhost:3457, but the shell helpers shell out to
+	@# `claude`). Don't fail install - just warn so the user knows.
+	@if command -v claude >/dev/null 2>&1; then \
+		echo "    [ok] claude installed (PATH: $$(command -v claude))"; \
+	else \
+		echo "    [warn] 'claude' not found. Install Claude Code separately:"; \
+		echo "             npm i -g @anthropic-ai/claude-code"; \
+		echo "             docs: https://docs.anthropic.com/en/docs/claude-code"; \
+		echo "           Stack will still run, but claude-router-shell/-clean need it."; \
+	fi
 
 install: deps
 	@echo "==> Installing claude-router"
