@@ -31,7 +31,7 @@ RUN_SCRIPT  := $(REPO_DIR)/bin/run.sh
 EXAMPLE_YAML := $(REPO_DIR)/examples/models.example.yaml
 USER_YAML   := $(CONFIG_DIR)/models.yaml
 
-PROMPTLINT_PKG := github.com/mshogin/promptlint/cmd/promptlint@latest
+PROMPTLINT_PKG := github.com/mshogin/promptlint/cmd/promptlint@v0.1.0
 CCR_NPM_PKG    := @musistudio/claude-code-router
 
 MARKER_BEGIN := \# >>> claude-router >>>
