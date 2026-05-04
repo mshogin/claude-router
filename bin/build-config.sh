@@ -184,6 +184,11 @@ config = {
                 "context_window": m["context_window"],
                 "max_output_tokens": m.get("max_output_tokens"),
                 "output_safety_margin": m.get("output_safety_margin", 256),
+                # tool_calling: false signals this model can't actually emit
+                # tool_calls[] (e.g. DeepSeek-V3.1 in corellm.wb.ru pool).
+                # router.js gives it a heavy penalty when tools[] is in the
+                # request, effectively excluding it from tool-bearing routes.
+                "tool_calling": m.get("tool_calling", True),
             }
             for m in models
         ],
