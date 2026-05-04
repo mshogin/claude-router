@@ -38,13 +38,7 @@ $EDITOR ~/.claude-router/models.yaml
 #   auth_secret: <name>          # gpg-encrypted at ~/secrets/<name>.gpg,
 #                                # OR override via env: CR_SECRET_<UPPER_NAME>=...
 
-# 4. (Recommended) Drop the agent rule into your Claude Code config.
-#    Helps small-context local models behave - Claude will plan tasks
-#    in atomic steps that fit the window. See claude-instructions.md.
-mkdir -p ~/.claude/rules
-cp claude-instructions.md ~/.claude/rules/claude-router.md
-
-# 5. Start everything and launch Claude
+# 4. Start everything and launch Claude
 claude-router-shell
 ```
 

@@ -60,3 +60,36 @@ When reporting status, use the cursor format:
     [done] previous step → [current] step in progress [next] next step
 
 This makes progress legible at a glance and survives compaction.
+
+---
+
+## Execute, don't narrate
+
+When the next step is a tool call (Bash, Read, Edit, Write, Grep, Glob, etc.),
+call the tool. Don't describe what you're about to do and then stop.
+
+Some models in the local pool have weaker tool-calling instincts on long
+contexts and tend to produce text like "I'll first check the current state,
+then configure X" and close the turn without actually calling any tool.
+This wastes a round-trip and confuses the user, who then has to type
+"go ahead" to nudge the next step.
+
+**Pattern:** every "I'll do X" must be immediately followed by the tool
+call doing X, in the same response. If you find yourself writing
+"first I'll check, then I'll configure" - stop, delete that sentence,
+and just call the first tool. Narration after the tool result is fine;
+narration *instead* of the tool is not.
+
+**Concrete example.**
+
+Bad:
+> Я помогу настроить домашнюю директорию. Сначала проверю текущее
+> состояние и затем настрою подключение.
+> [stop_reason: end_turn — turn closed, no tool called]
+
+Good:
+> Я помогу настроить домашнюю директорию. Проверяю состояние:
+> [Bash tool call: cd ~ && git status]
+
+The user can read intent from the action itself; they do not need a
+separate "I'm about to" preamble.

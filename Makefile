@@ -31,6 +31,12 @@ RUN_SCRIPT  := $(REPO_DIR)/bin/run.sh
 EXAMPLE_YAML := $(REPO_DIR)/examples/models.example.yaml
 USER_YAML   := $(CONFIG_DIR)/models.yaml
 
+CLAUDE_DIR        := $(HOME)/.claude
+CLAUDE_RULES_DIR  := $(CLAUDE_DIR)/rules
+CLAUDE_RULE_FILE  := $(CLAUDE_RULES_DIR)/claude-router.md
+CLAUDE_MD         := $(CLAUDE_DIR)/CLAUDE.md
+INSTRUCTIONS_SRC  := $(REPO_DIR)/claude-instructions.md
+
 PROMPTLINT_PKG := github.com/mshogin/promptlint/cmd/promptlint@v0.1.0
 CCR_NPM_PKG    := @musistudio/claude-code-router
 
@@ -143,6 +149,18 @@ install: deps
 		"$(ZSH_SOURCE)" "$(ZSH_SOURCE)" \
 		'$(MARKER_END)' >> "$(ZSHRC)"
 
+	@# 4) Agent rule: ~/.claude/rules/claude-router.md (idempotent, overwrites
+	@# so updates to claude-instructions.md propagate on re-install).
+	@# Also ensures ~/.claude/CLAUDE.md exists (Claude Code creates it on
+	@# first run, but on a fresh user account it may not be there yet).
+	@mkdir -p "$(CLAUDE_RULES_DIR)"
+	@cp "$(INSTRUCTIONS_SRC)" "$(CLAUDE_RULE_FILE)"
+	@echo "    installed agent rule -> $(CLAUDE_RULE_FILE)"
+	@if [ ! -f "$(CLAUDE_MD)" ]; then \
+		touch "$(CLAUDE_MD)"; \
+		echo "    created empty $(CLAUDE_MD)"; \
+	fi
+
 	@echo ""
 	@echo "Done. Final steps:"
 	@echo "  1. Edit $(USER_YAML) - configure auth for each model."
@@ -166,8 +184,11 @@ uninstall:
 		     index($$0,e){skip=0; next} \
 		     !skip{print}' "$(ZSHRC)" > "$(ZSHRC).tmp" && mv "$(ZSHRC).tmp" "$(ZSHRC)"; \
 	fi
+	@if [ -f "$(CLAUDE_RULE_FILE)" ]; then \
+		rm -f "$(CLAUDE_RULE_FILE)" && echo "    rm $(CLAUDE_RULE_FILE)"; \
+	fi
 	@echo ""
-	@echo "Removed symlinks and zshrc block. Config remains at $(CONFIG_DIR)."
+	@echo "Removed symlinks, zshrc block, and agent rule. Config remains at $(CONFIG_DIR)."
 
 status:
 	@echo "Repo:        $(REPO_DIR)"
