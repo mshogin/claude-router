@@ -151,14 +151,18 @@ install: deps
 
 	@# 4) Agent rule: ~/.claude/rules/claude-router.md (idempotent, overwrites
 	@# so updates to claude-instructions.md propagate on re-install).
-	@# Also ensures ~/.claude/CLAUDE.md exists (Claude Code creates it on
-	@# first run, but on a fresh user account it may not be there yet).
+	@# Claude Code auto-loads files from ~/.claude/rules/ into the session
+	@# system prompt. We only manage our own rule file here - CLAUDE.md is
+	@# the user's own territory (lives in their personal dotfiles repo).
+	@# We do create an empty CLAUDE.md if it doesn't exist, because on
+	@# fresh accounts the rules/ dir on its own seems not to activate
+	@# personal-context loading until ~/.claude/CLAUDE.md is present.
 	@mkdir -p "$(CLAUDE_RULES_DIR)"
 	@cp "$(INSTRUCTIONS_SRC)" "$(CLAUDE_RULE_FILE)"
 	@echo "    installed agent rule -> $(CLAUDE_RULE_FILE)"
 	@if [ ! -f "$(CLAUDE_MD)" ]; then \
 		touch "$(CLAUDE_MD)"; \
-		echo "    created empty $(CLAUDE_MD)"; \
+		echo "    created empty $(CLAUDE_MD) (anchor for rules/ auto-load)"; \
 	fi
 
 	@echo ""
