@@ -18,7 +18,7 @@ typeset -g CLAUDE_ROUTER_CONFIG_DIR="${HOME}/.claude-router"
 # "defining function based on alias". This keeps re-source idempotent.
 unalias claude-router claude-router-stop claude-router-watch claude-router-status \
         claude-router-clean claude-router-shell claude-router-reload \
-        claude-router-up claude-router-down 2>/dev/null
+        claude-router-reload-isolated claude-router-up claude-router-down 2>/dev/null
 
 # ---- aliases -----------------------------------------------------------------
 
@@ -219,21 +219,78 @@ claude-router-shell() {
   claude "$@"
 }
 
-# Stop everything, rebuild config, restart, launch claude (clean) inline.
-# `--no-cli` skips the claude launch.
+# Internal helper: stop the stack, restart it (optionally in DEBUG mode),
+# require claude binary, export router env. Used by both -reload variants.
+# Returns non-zero if stack/claude isn't ready, leaving env unset.
+_claude_router_full_restart() {
+  local debug=0
+  if [ "${1:-}" = "--debug" ]; then
+    debug=1
+    shift
+  fi
+  if [ "${debug}" = "1" ]; then
+    _claude_router_restart_debug || return 1
+  else
+    "${CLAUDE_ROUTER_REPO}/bin/stop.sh" >/dev/null 2>&1
+    sleep 1
+    if ! "${CLAUDE_ROUTER_REPO}/bin/run.sh"; then
+      echo "Stack failed to start" >&2
+      return 1
+    fi
+  fi
+  _claude_router_require_claude || return 1
+  _claude_router_export_env
+}
+
+# Stop the stack, restart it, launch claude with FULL personal context
+# (CLAUDE.md, hooks, skills, auto-memory, MCP servers - all sent upstream).
+#
+# Usage:
+#   claude-router-reload                    # restart + claude (personal)
+#   claude-router-reload --debug            # same, with FOOTER_PROXY_DEBUG=1
+#   claude-router-reload --no-cli           # restart only, don't launch claude
 claude-router-reload() {
-  "${CLAUDE_ROUTER_REPO}/bin/stop.sh" >/dev/null 2>&1
-  sleep 1
-  if ! "${CLAUDE_ROUTER_REPO}/bin/run.sh"; then
-    echo "Stack failed to start" >&2
-    return 1
+  local debug_flag=()
+  if [ "${1:-}" = "--debug" ]; then
+    debug_flag=(--debug)
+    shift
   fi
   if [ "${1:-}" = "--no-cli" ]; then
+    if [ "${debug_flag[1]:-}" = "--debug" ]; then
+      _claude_router_restart_debug || return 1
+    else
+      "${CLAUDE_ROUTER_REPO}/bin/stop.sh" >/dev/null 2>&1
+      sleep 1
+      "${CLAUDE_ROUTER_REPO}/bin/run.sh" || { echo "Stack failed to start" >&2; return 1; }
+    fi
     echo
-    echo "Stack ready. Run 'claude-router-clean' when needed."
+    echo "Stack ready. Run 'claude-router-shell' (personal) or 'claude-router-clean' (isolated)."
     return 0
   fi
+  _claude_router_full_restart "${debug_flag[@]}" || return 1
   echo
-  echo "=== launching claude (clean mode) ==="
-  claude-router-clean
+  echo "=== launching claude (full personal context) ==="
+  claude "$@"
+}
+
+# Stop the stack, restart it, launch claude in fully isolated mode
+# (no CLAUDE.md / hooks / skills / settings / MCP - --bare --strict-mcp-config
+# --setting-sources ""). Use when routing to a corporate or shared LLM pool
+# you don't want personal context to reach.
+#
+# Usage:
+#   claude-router-reload-isolated           # restart + claude (isolated)
+#   claude-router-reload-isolated --debug   # same, with FOOTER_PROXY_DEBUG=1
+claude-router-reload-isolated() {
+  local debug_flag=()
+  if [ "${1:-}" = "--debug" ]; then
+    debug_flag=(--debug)
+    shift
+  fi
+  _claude_router_full_restart "${debug_flag[@]}" || return 1
+  echo
+  echo "=== launching claude (isolated mode) ==="
+  echo "  flags: --bare --strict-mcp-config --setting-sources \"\""
+  echo
+  claude --bare --strict-mcp-config --setting-sources "" "$@"
 }
