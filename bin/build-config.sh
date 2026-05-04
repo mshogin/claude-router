@@ -52,10 +52,44 @@ router_cfg = cat["router"]
 models = cat["models"]
 
 
-def decrypt_gpg(name: str) -> str:
+def auth_help(model_id: str, secret_name: str = None) -> str:
+    """Returns a multi-line hint describing the three auth options.
+
+    Used in error messages so a user who copied someone else's models.yaml
+    sees concrete YAML they can paste, not just 'secret file not found'."""
+    env_var = (
+        "CR_SECRET_" + secret_name.upper().replace("-", "_")
+        if secret_name else "CR_SECRET_<NAME>"
+    )
+    sn = secret_name or "<some-name>"
+    return (
+        f"\n"
+        f"To authenticate model '{model_id}', pick ONE of these in models.yaml:\n"
+        f"\n"
+        f"  Option A (plain text - simplest):\n"
+        f"    api_key: \"sk-...\"\n"
+        f"\n"
+        f"  Option B (read from environment variable):\n"
+        f"    api_key_env: MY_TOKEN_VAR\n"
+        f"    # then: export MY_TOKEN_VAR=...   (in your shell)\n"
+        f"\n"
+        f"  Option C (encrypted file via gpg-agent - advanced):\n"
+        f"    auth_secret: {sn}\n"
+        f"    # then put the token at: {os.path.join(secrets_dir, sn + '.gpg')}\n"
+        f"    # OR override without gpg: export {env_var}=...\n"
+    )
+
+
+def decrypt_gpg(name: str, model_id: str) -> str:
     path = os.path.join(secrets_dir, f"{name}.gpg")
     if not os.path.exists(path):
-        sys.exit(f"ERROR: secret file not found: {path}")
+        msg = (
+            f"ERROR: model '{model_id}' has 'auth_secret: {name}' but the "
+            f"encrypted file is missing:\n"
+            f"  {path}\n"
+            + auth_help(model_id, name)
+        )
+        sys.exit(msg)
     out = subprocess.run(
         ["gpg", "--quiet", "--batch", "--decrypt", path],
         capture_output=True, check=True,
@@ -72,8 +106,11 @@ def resolve_api_key(m: dict) -> str:
         val = os.environ.get(env_name)
         if not val:
             sys.exit(
-                f"ERROR: model '{m['id']}' has api_key_env={env_name} "
-                f"but environment variable is empty."
+                f"ERROR: model '{m['id']}' has 'api_key_env: {env_name}' "
+                f"but the environment variable is empty.\n"
+                f"  Set it in your shell:    export {env_name}=...\n"
+                f"  Or switch to plain text: replace 'api_key_env' with "
+                f"'api_key: \"<your-token>\"' in models.yaml."
             )
         return val
     secret = m.get("auth_secret")
@@ -81,7 +118,7 @@ def resolve_api_key(m: dict) -> str:
         env_override = "CR_SECRET_" + secret.upper().replace("-", "_")
         if os.environ.get(env_override):
             return os.environ[env_override]
-        return decrypt_gpg(secret)
+        return decrypt_gpg(secret, m["id"])
     return "not-needed"
 
 

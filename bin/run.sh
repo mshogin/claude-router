@@ -75,13 +75,9 @@ elif [ "${FORCE_REBUILD:-0}" = "1" ]; then
 fi
 
 if [ "${NEED_REBUILD}" = "1" ]; then
-  # Build will likely need gpg-agent unlocked (for auth_secret decrypts).
-  # Failures here surface a clear message from build-config.sh itself.
+  # build-config.sh prints actionable, model-specific hints itself; we just
+  # exit non-zero so the caller knows the stack didn't start.
   if ! "${REPO_DIR}/bin/build-config.sh"; then
-    echo
-    echo "Hint: if it failed on gpg, unlock the agent in your terminal:"
-    echo "  gpg --decrypt ~/secrets/<secret-name>.gpg > /dev/null"
-    echo "(Or use api_key: \"...\" / api_key_env: VAR_NAME in models.yaml.)"
     exit 1
   fi
 else

@@ -134,7 +134,12 @@ install: deps
 
 	@echo ""
 	@echo "Done. Final steps:"
-	@echo "  1. Edit $(USER_YAML) - put real api_keys"
+	@echo "  1. Edit $(USER_YAML) - configure auth for each model."
+	@echo "     Per-model auth (pick one):"
+	@echo "       api_key:     \"sk-...\"        # plain text (simplest)"
+	@echo "       api_key_env: ENV_VAR_NAME    # read from \$$ENV_VAR_NAME"
+	@echo "       auth_secret: <name>          # gpg-encrypted ~/secrets/<name>.gpg"
+	@echo "     See examples/models.example.yaml for full syntax."
 	@echo "  2. Reload shell:  source $(ZSHRC)"
 	@echo "  3. Start stack:   claude-router-reload"
 
