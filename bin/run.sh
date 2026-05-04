@@ -100,13 +100,15 @@ if ! "${LOOPBACK_CURL[@]}" -X POST -H "Content-Type: text/plain" --data "ping" \
      -o /dev/null http://localhost:8080/analyze 2>&1; then
   if [ -x "${PROMPTLINT_BIN}" ]; then
     echo "[promptlint] starting ${PROMPTLINT_BIN} on :8080"
-    # </dev/null is critical: when run.sh is invoked from a non-interactive
-    # context (sudo bash -c, ssh, etc.) there's no controlling TTY, and
-    # nohup fails with "Inappropriate ioctl for device". Detaching stdin
-    # explicitly avoids the issue.
-    nohup env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-      -u ALL_PROXY -u all_proxy no_proxy='*' NO_PROXY='*' \
-      "${PROMPTLINT_BIN}" serve </dev/null > "${PROMPTLINT_LOG}" 2>&1 &
+    # Detach stdin (</dev/null) and run in a subshell so the background
+    # process is reparented to init and survives this script. We don't use
+    # nohup because in non-interactive contexts (sudo bash -c, ssh) it
+    # tries to detach from a TTY that doesn't exist and fails with
+    # "Inappropriate ioctl for device". Without an attached terminal,
+    # SIGHUP isn't sent on exit anyway.
+    ( env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+        -u ALL_PROXY -u all_proxy no_proxy='*' NO_PROXY='*' \
+        "${PROMPTLINT_BIN}" serve </dev/null > "${PROMPTLINT_LOG}" 2>&1 & )
     sleep 1
   else
     echo "[promptlint] not installed (router will use fallback model)"
@@ -122,11 +124,11 @@ fi
 # 3) ccr - corporate proxy env stripped (some upstreams must be reached directly).
 "${CCR_BIN}" stop >/dev/null 2>&1 || true
 sleep 1
-# </dev/null is critical for non-interactive contexts (sudo bash -c, ssh).
-nohup env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-  -u ALL_PROXY -u all_proxy \
-  no_proxy='*' NO_PROXY='*' \
-  "${CCR_BIN}" start </dev/null > "${CCR_LOG}" 2>&1 &
+# Subshell + </dev/null - see promptlint section above for why no nohup.
+( env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+    -u ALL_PROXY -u all_proxy \
+    no_proxy='*' NO_PROXY='*' \
+    "${CCR_BIN}" start </dev/null > "${CCR_LOG}" 2>&1 & )
 
 # Wait up to 15s for ccr to bind :3456 (cold start can take >3s while
 # transformers register).
@@ -150,10 +152,10 @@ fi
 # 4) Footer-proxy on :3457 - chat-template tool-call rescue + footer injection.
 if ! lsof -ti :3457 >/dev/null 2>&1; then
   echo "[footer-proxy] starting on :3457"
-  # </dev/null is critical for non-interactive contexts.
-  nohup env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-    -u ALL_PROXY -u all_proxy no_proxy='*' NO_PROXY='*' \
-    node "${REPO_DIR}/lib/footer-proxy.js" </dev/null > "${FOOTER_PROXY_LOG}" 2>&1 &
+  # Subshell + </dev/null - see promptlint section above for why no nohup.
+  ( env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+      -u ALL_PROXY -u all_proxy no_proxy='*' NO_PROXY='*' \
+      node "${REPO_DIR}/lib/footer-proxy.js" </dev/null > "${FOOTER_PROXY_LOG}" 2>&1 & )
   sleep 1
 fi
 if "${LOOPBACK_CURL[@]}" -o /dev/null http://127.0.0.1:3457/ ; then
