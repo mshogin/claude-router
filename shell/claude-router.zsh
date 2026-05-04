@@ -46,6 +46,21 @@ _claude_router_ensure_stack() {
   }
 }
 
+# Force-restart the stack with FOOTER_PROXY_DEBUG=1. Used by --debug.
+# Always stops the running stack first so DEBUG-mode actually takes effect
+# (the env var is read once at footer-proxy startup).
+_claude_router_restart_debug() {
+  echo "[claude-router] restarting stack in DEBUG mode..."
+  "${CLAUDE_ROUTER_REPO}/bin/stop.sh" >/dev/null 2>&1
+  sleep 1
+  FOOTER_PROXY_DEBUG=1 "${CLAUDE_ROUTER_REPO}/bin/run.sh" >/dev/null 2>&1 || {
+    echo "[claude-router] stack failed to start. Try: FOOTER_PROXY_DEBUG=1 claude-router"
+    return 1
+  }
+  echo "[claude-router] DEBUG=1 - dumps in ~/.claude-router/logs/raw/"
+}
+
+
 # Export router-pointed Anthropic env into the current shell. Strips any
 # corporate HTTP(S)_PROXY so claude itself talks to localhost directly.
 #
@@ -162,7 +177,13 @@ claude-router-down() {
 # from inside a zsh function. If you need dictation, use `claude-router-up`
 # instead and run claude yourself with the same flags.
 claude-router-clean() {
-  _claude_router_ensure_stack || return 1
+  # Optional leading --debug: force-restart stack with FOOTER_PROXY_DEBUG=1.
+  if [ "${1:-}" = "--debug" ]; then
+    shift
+    _claude_router_restart_debug || return 1
+  else
+    _claude_router_ensure_stack || return 1
+  fi
   _claude_router_require_claude || return 1
   _claude_router_export_env
 
@@ -183,7 +204,16 @@ claude-router-clean() {
 # Note: dictation (Fn+Fn) does NOT work here. For dictation, use
 # `claude-router-up` and run plain `claude` yourself.
 claude-router-shell() {
-  _claude_router_ensure_stack || return 1
+  # Optional leading --debug: force-restart stack with FOOTER_PROXY_DEBUG=1
+  # so footer-proxy dumps every request to ~/.claude-router/logs/raw/.
+  # Useful when chasing a stream-shape bug: one command instead of
+  # claude-router-stop && FOOTER_PROXY_DEBUG=1 bin/run.sh && claude-router-shell.
+  if [ "${1:-}" = "--debug" ]; then
+    shift
+    _claude_router_restart_debug || return 1
+  else
+    _claude_router_ensure_stack || return 1
+  fi
   _claude_router_require_claude || return 1
   _claude_router_export_env
   claude "$@"
