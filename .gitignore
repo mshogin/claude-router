@@ -1,0 +1,13 @@
+node_modules/
+*.log
+.DS_Store
+
+# Per-host config is NOT in the repo.
+# Users keep their models.yaml at ~/.claude-router/models.yaml
+*.local.yaml
+config.json
+
+# IDE
+.idea/
+.vscode/
+*.swp

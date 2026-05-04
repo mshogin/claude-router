@@ -1,0 +1,83 @@
+# claude-router - models catalog
+#
+# Place at ~/.claude-router/models.yaml. NOT part of the repo.
+# Generate ~/.claude-code-router/config.json with:
+#     bin/build-config.sh
+#
+# AUTHENTICATION OPTIONS (per model, pick one):
+#   api_key:       "sk-..."        # plain string, simplest, works for everyone
+#   api_key_env:   OPENAI_API_KEY  # read from environment variable
+#   auth_secret:   openai-api-key  # decrypt ~/secrets/openai-api-key.gpg via gpg agent
+#   (none)                         # send "not-needed" (for unauthenticated upstreams)
+#
+# OUTPUT SIZING (per model):
+#   context_window:        REQUIRED. Total context (input + output) the model
+#                          accepts, in tokens. Used to clamp max_tokens so the
+#                          provider doesn't 400 on long inputs.
+#   max_output_tokens:     OPTIONAL. Soft ceiling for response size (cost/UX).
+#   output_safety_margin:  OPTIONAL. Tokens reserved for tokenizer drift
+#                          (default 256). Subtracted from available output room.
+
+router:
+  port: 3456
+  promptlint_url: http://localhost:8080/analyze
+  fallback_model: openai-gpt5
+  quarantine_minutes: 5
+
+  # Routing scoring weights. Tune to bias selection.
+  scoring_weights:
+    domain: 1.0          # sum(prompt.domain[d] * model.strengths[d])
+    action: 0.5          # bonus when action (fix/refactor/explain/...) matches
+    code_aware: 0.4      # bonus when prompt mentions code/files
+    overcapacity_penalty: 0.7  # penalty when prompt complexity > model.complexity_max
+
+models:
+  # Example 1: OpenAI GPT-5 with plain api_key
+  - id: openai-gpt5
+    base_url: https://api.openai.com/v1
+    model_name: gpt-5
+    api_key: sk-PUT-YOUR-KEY-HERE
+    strengths:
+      general: 0.95
+      code: 0.90
+      reasoning: 0.95
+      math: 0.85
+    complexity_max: high
+    context_window: 200000
+    max_output_tokens: 65536
+
+  # Example 2: DeepSeek with env var (export DEEPSEEK_API_KEY=...)
+  - id: deepseek-v3
+    base_url: https://api.deepseek.com/v1
+    model_name: deepseek-chat
+    api_key_env: DEEPSEEK_API_KEY
+    strengths:
+      reasoning: 0.95
+      code: 0.85
+      math: 0.90
+    complexity_max: high
+    context_window: 131072
+    max_output_tokens: 32768
+
+  # Example 3: Anthropic via gpg-encrypted secret
+  - id: claude-sonnet
+    base_url: https://api.anthropic.com/v1
+    model_name: claude-sonnet-4-6
+    auth_secret: anthropic-api-key
+    strengths:
+      general: 0.92
+      code: 0.92
+      reasoning: 0.93
+    complexity_max: high
+    context_window: 200000
+    max_output_tokens: 65536
+
+  # Example 4: local Ollama (no auth)
+  - id: local-llama
+    base_url: http://localhost:11434/v1
+    model_name: llama3.1:8b
+    strengths:
+      general: 0.65
+    complexity_max: low
+    context_window: 8192
+    max_output_tokens: 4096
