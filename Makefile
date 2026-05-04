@@ -17,7 +17,7 @@
 #   make uninstall    remove symlinks + zshrc block (keeps config)
 #   make status       show installation + live service state
 
-.PHONY: install deps uninstall status help
+.PHONY: install deps uninstall status test help
 
 REPO_DIR    := $(abspath $(CURDIR))
 CONFIG_DIR  := $(HOME)/.claude-router
@@ -45,6 +45,7 @@ MARKER_END   := \# <<< claude-router <<<
 
 help:
 	@echo "make install    - full install (deps + config + symlinks + zshrc)"
+	@echo "make test       - run tests/*.json against the running stack"
 	@echo "make deps       - install external tools only (ccr, promptlint)"
 	@echo "make uninstall  - remove symlinks and zshrc block"
 	@echo "make status     - show installation state and live ports"
@@ -193,6 +194,9 @@ uninstall:
 	fi
 	@echo ""
 	@echo "Removed symlinks, zshrc block, and agent rule. Config remains at $(CONFIG_DIR)."
+
+test:
+	@$(REPO_DIR)/bin/run-tests.sh
 
 status:
 	@echo "Repo:        $(REPO_DIR)"

@@ -1,0 +1,9 @@
+{
+  "name": "bash-pwd",
+  "description": "Imperative command-execution prompt. The model must call Bash to satisfy the request - text-only is wrong.",
+  "prompt": "Run pwd in this directory and report the path it printed.",
+  "expect": {
+    "tool_call_required": true,
+    "tool_name_any_of": ["Bash"]
+  }
+}
