@@ -6,24 +6,51 @@ Smart per-prompt LLM router for [Claude Code](https://docs.anthropic.com/en/docs
 
 ## Quickstart
 
+### Prerequisites
+
+- `node` 18+ and `npm` (no sudo required)
+- `python3`
+- `go` (optional, only for `promptlint` scoring; falls back to a single model otherwise)
+- `claude` (Claude Code CLI). User-space install:
+  ```bash
+  npm i --prefix ~/.local @anthropic-ai/claude-code
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+  source ~/.zshrc
+  claude --version
+  ```
+
+### Install
+
 ```bash
-# 1. Clone + install (sets up deps, symlinks, ~/.zshrc block)
-git clone https://github.com/mshogin/claude-router.git ~/my/claude-router
-cd ~/my/claude-router
+# 1. Clone + install (deps, symlinks, ~/.zshrc block - all user-space, no sudo)
+git clone https://github.com/mshogin/claude-router.git ~/claude-router
+cd ~/claude-router
 make install
 
-# 2. Edit your model catalog
-$EDITOR ~/.claude-router/models.yaml
-
-# 3. Reload shell
+# 2. Reload shell so the helper functions become available
 source ~/.zshrc
 
-# 4. Start the stack + Claude
-claude-router-up                          # start services + export env
-claude --bare --strict-mcp-config         # type this yourself - macOS dictation works
+# 3. Configure auth for each model in your catalog
+$EDITOR ~/.claude-router/models.yaml
+# Three options per model:
+#   api_key:     "sk-..."        # plain text, simplest
+#   api_key_env: VAR_NAME        # reads from $VAR_NAME at config-build time
+#   auth_secret: <name>          # gpg-encrypted at ~/secrets/<name>.gpg,
+#                                # OR override via env: CR_SECRET_<UPPER_NAME>=...
+
+# 4. (Recommended) Drop the agent rule into your Claude Code config.
+#    Helps small-context local models behave - Claude will plan tasks
+#    in atomic steps that fit the window. See claude-instructions.md.
+mkdir -p ~/.claude/rules
+cp claude-instructions.md ~/.claude/rules/claude-router.md
+
+# 5. Start everything and launch Claude
+claude-router-shell
 ```
 
-That's it. Every reply from Claude Code now ends with a `[router] model · features` footer telling you which model in your pool answered.
+That's it. Every reply now ends with a `[router] model · features` footer telling you which model in your pool answered.
+
+Re-running `claude-router-shell` later is idempotent: it lazy-starts the stack if it's down, otherwise just exports env and launches `claude`.
 
 ---
 
@@ -79,19 +106,28 @@ After editing the catalog, regenerate the ccr config and restart:
 
 ## Daily commands
 
+Three launch modes, pick the one that fits your situation:
+
+| Command | What it does | Personal context (CLAUDE.md / hooks / skills / memory) | macOS Fn+Fn dictation |
+|---|---|---|---|
+| `claude-router-shell` | Lazy-starts the stack, launches `claude` with your full setup | sent to upstream | no |
+| `claude-router-up` then `claude` | Lazy-starts the stack + exports env, you run `claude` yourself | sent to upstream | yes |
+| `claude-router-clean` | Lazy-starts the stack, launches `claude --bare --strict-mcp-config --setting-sources ""` | none — fully isolated | no |
+
+Use `claude-router-clean` when you don't want personal context, memory, or skills to reach the upstream pool (e.g. a corporate or shared LLM provider).
+
+Other helpers:
+
 | Command | What it does |
 |---|---|
-| `claude-router-up` | Ensure stack is running + export env in this shell. Then run `claude` yourself. **Use this if you want macOS dictation (Fn+Fn).** |
-| `claude-router-down` | Unset env in this shell. Stack keeps running. |
-| `claude-router` | Start the full stack |
+| `claude-router` | Just start the stack (no Claude launch) |
 | `claude-router-stop` | Stop everything |
-| `claude-router-reload` | Stop → start → launch clean Claude inline |
-| `claude-router-clean` | One-shot: stack + Claude with `--bare --strict-mcp-config` |
-| `claude-router-shell` | One-shot: Claude with full personal context (`CLAUDE.md` / hooks / skills WILL be sent to upstream) |
+| `claude-router-reload` | Stop → start → launch isolated Claude inline |
+| `claude-router-down` | Unset env in this shell. Stack keeps running. |
 | `claude-router-watch` | `tail -f ~/.claude-router/logs/decisions.log` |
 | `claude-router-status` | Quick "N of 3 services up" check |
 
-**Note on dictation:** macOS Fn+Fn requires `claude` to be a *direct* child of the terminal — not wrapped in a function. `claude-router-up` prepares the shell and returns control so you can type `claude` yourself.
+**Note on dictation:** macOS Fn+Fn requires `claude` to be a *direct* child of the terminal — not wrapped in a zsh function. `claude-router-up` prepares the shell and returns control so you can type `claude` yourself.
 
 ---
 
