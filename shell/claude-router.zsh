@@ -48,12 +48,17 @@ _claude_router_ensure_stack() {
 
 # Export router-pointed Anthropic env into the current shell. Strips any
 # corporate HTTP(S)_PROXY so claude itself talks to localhost directly.
+#
+# Only ANTHROPIC_API_KEY is set, not ANTHROPIC_AUTH_TOKEN: claude v2.1+
+# warns "Auth conflict" when both are set, and --bare mode strictly
+# requires ANTHROPIC_API_KEY anyway. ANTHROPIC_AUTH_TOKEN is also unset
+# proactively in case the user had it from an earlier session.
 _claude_router_export_env() {
   export ANTHROPIC_BASE_URL=http://localhost:3457
-  export ANTHROPIC_AUTH_TOKEN=not-needed
   export ANTHROPIC_API_KEY=not-needed
   export API_TIMEOUT_MS=600000
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+  unset ANTHROPIC_AUTH_TOKEN
   unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
 }
 
@@ -138,7 +143,7 @@ EOF
 
 # Revert env exported by claude-router-up. Stack is left running.
 claude-router-down() {
-  unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_API_KEY \
+  unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN \
         API_TIMEOUT_MS CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
   echo "[claude-router-down] env reverted in this shell. Stack still running."
 }

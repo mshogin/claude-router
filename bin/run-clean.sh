@@ -33,11 +33,15 @@ fi
 
 # Stay in the user's current directory. --bare already disables CLAUDE.md
 # auto-discovery so changing cwd is not necessary.
+#
+# Only ANTHROPIC_API_KEY is set: claude v2.1+ warns "Auth conflict" if
+# both ANTHROPIC_AUTH_TOKEN and ANTHROPIC_API_KEY are set, and --bare
+# mode strictly requires ANTHROPIC_API_KEY.
 export ANTHROPIC_BASE_URL="${ROUTER_BASE}"
-export ANTHROPIC_AUTH_TOKEN=not-needed
 export ANTHROPIC_API_KEY=not-needed
 export API_TIMEOUT_MS=600000
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+unset ANTHROPIC_AUTH_TOKEN
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
 
 echo "=== claude-router clean (isolated) ==="

@@ -164,16 +164,20 @@ cat <<EOF
 In a fresh shell:
 
   export ANTHROPIC_BASE_URL=http://localhost:3457
-  export ANTHROPIC_AUTH_TOKEN=not-needed
   export ANTHROPIC_API_KEY=not-needed
   export API_TIMEOUT_MS=600000
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+  unset ANTHROPIC_AUTH_TOKEN
   unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
-  claude --bare --strict-mcp-config       # clean (no personal CLAUDE.md / hooks / skills)
+  claude                                   # full personal context
+  # OR, fully isolated (no CLAUDE.md / hooks / skills / settings / MCP):
+  claude --bare --strict-mcp-config --setting-sources ""
 
-Or use the helpers:
-  bin/run-clean.sh                         # clean Claude in ~/sandbox/llm-clean
-  bin/reload.sh                            # stop, start, launch clean Claude inline
+Or use the zsh helpers (idempotent, lazy-start the stack):
+  claude-router-shell                      # full personal context
+  claude-router-clean                      # fully isolated
+  claude-router-up                         # prepare env, run claude yourself
+                                           # (only mode where macOS Fn+Fn dictation works)
 
 Logs:
   Routing:      tail -f ${CCR_LOG}
