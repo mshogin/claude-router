@@ -22,7 +22,34 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_DIR="${CONFIG_DIR:-${HOME}/.claude-router}"
 SECRETS_DIR="${SECRETS_DIR:-${HOME}/secrets}"
 
-PROMPTLINT_BIN="${PROMPTLINT_BIN:-$(command -v promptlint || echo /tmp/promptlint)}"
+# Resolve ccr binary - prefer the user-space install in CONFIG_DIR (no sudo
+# required, what `make deps` produces) and fall back to PATH for users who
+# installed it themselves with `npm install -g`.
+if [ -x "${CONFIG_DIR}/node_modules/.bin/ccr" ]; then
+  CCR_BIN="${CONFIG_DIR}/node_modules/.bin/ccr"
+else
+  CCR_BIN="$(command -v ccr 2>/dev/null || true)"
+fi
+if [ -z "${CCR_BIN}" ]; then
+  echo "ERROR: ccr binary not found. Run 'make deps' to install it under ${CONFIG_DIR}/node_modules/." >&2
+  exit 1
+fi
+
+# Resolve promptlint binary - PATH first, then GOBIN/GOPATH/~/go/bin so
+# `go install`-only setups (no shell PATH update) still work.
+if [ -z "${PROMPTLINT_BIN:-}" ]; then
+  for cand in \
+      "$(command -v promptlint 2>/dev/null || true)" \
+      "$(go env GOBIN 2>/dev/null)/promptlint" \
+      "$(go env GOPATH 2>/dev/null)/bin/promptlint" \
+      "${HOME}/go/bin/promptlint"; do
+    if [ -n "${cand}" ] && [ -x "${cand}" ]; then
+      PROMPTLINT_BIN="${cand}"
+      break
+    fi
+  done
+fi
+PROMPTLINT_BIN="${PROMPTLINT_BIN:-/tmp/promptlint}"
 PROMPTLINT_LOG="/tmp/promptlint.log"
 CCR_LOG="/tmp/ccr-start.log"
 FOOTER_PROXY_LOG="/tmp/claude-router-footer-proxy.log"
@@ -82,12 +109,12 @@ else
 fi
 
 # 3) ccr - corporate proxy env stripped (some upstreams must be reached directly).
-ccr stop >/dev/null 2>&1 || true
+"${CCR_BIN}" stop >/dev/null 2>&1 || true
 sleep 1
 nohup env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
   -u ALL_PROXY -u all_proxy \
   no_proxy='*' NO_PROXY='*' \
-  ccr start > "${CCR_LOG}" 2>&1 &
+  "${CCR_BIN}" start > "${CCR_LOG}" 2>&1 &
 
 # Wait up to 15s for ccr to bind :3456 (cold start can take >3s while
 # transformers register).

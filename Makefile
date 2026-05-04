@@ -44,16 +44,26 @@ help:
 	@echo "make status     - show installation state and live ports"
 
 deps:
-	@echo "==> Installing dependencies"
+	@echo "==> Installing dependencies (user-space, no sudo required)"
 	@command -v node >/dev/null 2>&1 || { echo "ERROR: node 18+ required (https://nodejs.org)"; exit 1; }
 	@command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 required"; exit 1; }
-	@if ! command -v ccr >/dev/null 2>&1; then \
-		echo "    npm install -g $(CCR_NPM_PKG)"; \
-		npm install -g $(CCR_NPM_PKG); \
+	@mkdir -p "$(CONFIG_DIR)"
+	@# ccr (npm) -> $(CONFIG_DIR)/node_modules/.bin/ccr. Avoids `npm install -g`
+	@# which on Homebrew writes to /opt/homebrew/lib/node_modules and needs sudo.
+	@if [ -x "$(CONFIG_DIR)/node_modules/.bin/ccr" ]; then \
+		echo "    [ok] ccr installed (local: $(CONFIG_DIR)/node_modules/.bin/ccr)"; \
+	elif command -v ccr >/dev/null 2>&1; then \
+		echo "    [ok] ccr installed (PATH: $$(command -v ccr))"; \
 	else \
-		echo "    [ok] ccr installed"; \
+		echo "    npm install $(CCR_NPM_PKG) -> $(CONFIG_DIR)/node_modules/"; \
+		( cd "$(CONFIG_DIR)" && npm install --silent --no-audit --no-fund $(CCR_NPM_PKG) ); \
 	fi
-	@if ! command -v promptlint >/dev/null 2>&1; then \
+	@# promptlint (go) -> $$GOBIN or $$GOPATH/bin (default ~/go/bin), user-writable.
+	@if command -v promptlint >/dev/null 2>&1; then \
+		echo "    [ok] promptlint installed (PATH: $$(command -v promptlint))"; \
+	elif [ -x "$$HOME/go/bin/promptlint" ]; then \
+		echo "    [ok] promptlint installed ($$HOME/go/bin/promptlint - add ~/go/bin to PATH if you want 'promptlint' as a command)"; \
+	else \
 		if command -v go >/dev/null 2>&1; then \
 			echo "    go install $(PROMPTLINT_PKG)"; \
 			go install $(PROMPTLINT_PKG); \
@@ -62,12 +72,11 @@ deps:
 			echo "           Router will use fallback_model for every request."; \
 			echo "           Install Go and run 'go install $(PROMPTLINT_PKG)' to enable scoring."; \
 		fi \
-	else \
-		echo "    [ok] promptlint installed"; \
 	fi
+	@# pyyaml -> --user site-packages, no sudo needed.
 	@python3 -c "import yaml" 2>/dev/null || { \
-		echo "    pip install pyyaml"; \
-		python3 -m pip install --quiet pyyaml || pip3 install --quiet pyyaml; \
+		echo "    pip install --user pyyaml"; \
+		python3 -m pip install --user --quiet pyyaml || pip3 install --user --quiet pyyaml; \
 	}
 
 install: deps
