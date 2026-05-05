@@ -1,8 +1,16 @@
 # Changelog
 
+Следует [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), версии — [SemVer](https://semver.org/lang/ru/).
+
+**Процесс:** каждый функциональный коммит — запись в `[Unreleased]` (Added/Changed/Removed/Fixed). При выпуске тега: переименовать `[Unreleased]` в `[X.Y.Z] - YYYY-MM-DD`, создать новую пустую `[Unreleased]` сверху.
+
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-05
+
 ### Added
+- `bin/run-tests.sh` — bash test runner. Каждый `tests/*.json` кейс гоняется в `mktemp` sandbox через `claude -p --dangerously-skip-permissions --output-format stream-json --verbose`. Парсит stream на `tool_use` блоки и `stop_reason`, сравнивает с `expect`. Per-test JSON результат (sandbox path, model picked, tools called, status, reason) сохраняется в `~/sandbox/claude-router-tests/results/<ts>/<name>.json` — failures дебагаемы постфактум. Sandboxes чистятся при PASS.
+- Первый тест-кейс для проверки выбора модели.
 - Dynamic `max_tokens` clamp in `lib/router.js` based on per-model `context_window`. On every request the router computes `effective = min(body.max_tokens, model.max_output_tokens, context_window - estimated_input - safety)`, floored at 256, and writes it back into `req.body.max_tokens`. Long inputs no longer 400 the provider with `'max_tokens' is too large`.
 - `lib/tokens.js` - token estimator (chars/4 baseline, signature stable for future tiktoken swap).
 - `lib/limits.js` - `estimateInputTokens(body)` and `effectiveMaxTokens(model, body)` as pure helpers.
