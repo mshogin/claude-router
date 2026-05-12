@@ -6,6 +6,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `lib/limits.js` — `MIN_OUTPUT_TOKENS` поднят с 256 до 2048. Прежний floor ломал thinking-модели (Qwen3.6 reasoning, DeepSeek-V3): они тратят 200-1000 токенов на внутренний reasoning ДО первого visible content-токена, при floor=256 модель упиралась в `max_tokens` внутри thinking и возвращала `content=[]` + `stop_reason=max_tokens`. Также добавлен per-model override через `model.min_output_tokens` в `models.yaml` для тонкой настройки.
+
 ## [0.1.3] - 2026-05-05
 
 ### Added
