@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-05-12
+
+### Fixed
+- `lib/footer-proxy.js` — footer теперь opt-in через `FOOTER_PROXY_FOOTER=1` (default OFF). Footer с index:99 в SSE stream ломал claude CLI парсинг финального content. В агентском/сервисном режиме footer не нужен — он только для интерактивной chat-сессии локально.
+- `lib/footer-proxy.js` — `truncateAtChatTemplateBoundary` теперь удаляет только chat-template токены (replace), а не обрезает весь текст после них. Reasoning-модели (Qwen3.6, DeepSeek-V3) теперь не теряют финальный ответ после <|im_end|> разделителя thinking/answer.
+
 ### Changed
 - `lib/limits.js` — `MIN_OUTPUT_TOKENS` поднят с 256 до 2048. Прежний floor ломал thinking-модели (Qwen3.6 reasoning, DeepSeek-V3): они тратят 200-1000 токенов на внутренний reasoning ДО первого visible content-токена, при floor=256 модель упиралась в `max_tokens` внутри thinking и возвращала `content=[]` + `stop_reason=max_tokens`. Также добавлен per-model override через `model.min_output_tokens` в `models.yaml` для тонкой настройки.
 
