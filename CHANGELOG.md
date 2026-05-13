@@ -6,9 +6,12 @@
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-05-13
+
 ### Fixed
 - `lib/footer-proxy.js` — поддержка reasoning-моделей (Qwen3.6-Coder через ccr `reasoning` transformer): unsupported content blocks (`thinking`, `redacted_thinking`, `signature` и т.п.) теперь дропаются из ответа, а оставшиеся text/tool_use блоки переиндексируются в плотную нумерацию 0..N - claude CLI требует именно этого формата. До фикса агентский pipeline получал ошибку "Content block is not a text block" либо пустой content.
 - `lib/footer-proxy.js` — fallback на thinking-as-text: если LLM закончила `end_turn` на этапе reasoning и не выдала ни одного text/tool_use блока, накопленное содержимое thinking-блоков синтезируется в финальный text-блок (для stream и non-stream branches). Иначе ответ был бы пустым.
+- `lib/footer-proxy.js` — mis-typed delta check вынесен ПЕРЕД re-indexing. Раньше re-indexed deltas обходили фильтр и text_delta внутри tool_use блока проходил в claude CLI - ронялся agent-mode с "Content block is not a text block" на multi-tool ответах.
 - `lib/footer-proxy.js` — footer-injection больше не вставляет пустой text-блок если `FOOTER_PROXY_FOOTER=0`. Раньше пустой блок попадал в конец content[] и claude CLI печатал пустой результат.
 - `lib/footer-proxy.js` — фильтрация unsupported content blocks и mis-typed deltas теперь выполняется независимо от того, включён footer или нет. Раньше при `FOOTER_PROXY_FOOTER=0` весь поток пропускался через direct pipe без обработки.
 
