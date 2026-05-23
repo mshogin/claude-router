@@ -120,6 +120,7 @@ Other helpers:
 | `claude-router-down` | Unset env in this shell. Stack keeps running. |
 | `claude-router-watch` | `tail -f ~/.claude-router/logs/decisions.log` |
 | `claude-router-status` | Quick "N of 3 services up" check |
+| `bin/run.sh --version` | Print script, node, and ccr versions with port defaults and exit |
 
 **Note on dictation:** macOS Fn+Fn requires `claude` to be a *direct* child of the terminal — not wrapped in a zsh function. `claude-router-up` prepares the shell and returns control so you can type `claude` yourself.
 

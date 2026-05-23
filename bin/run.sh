@@ -13,6 +13,16 @@
 
 set -euo pipefail
 
+# --version flag: print version info and exit (don't start the stack).
+if [ "${1:-}" = "--version" ]; then
+  VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")"
+  echo "claude-router script version ${VERSION}"
+  echo "node $(node -v 2>/dev/null || echo 'not found')"
+  echo "ccr $(/opt/ccr/node_modules/.bin/ccr -v 2>/dev/null || "${CCR_BIN:-ccr}" -v 2>/dev/null || echo 'not found')"
+  echo "CCR_PORT=${CCR_PORT:-3456}, FOOTER_PROXY_PORT=${FOOTER_PROXY_PORT:-3457}"
+  exit 0
+fi
+
 # Loopback health checks must bypass any corporate HTTP(S)_PROXY in env -
 # the proxy refuses 127.0.0.1 and returns 503, which would mark a healthy
 # service as failed. `--noproxy '*'` makes curl ignore the proxy env vars.
