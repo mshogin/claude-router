@@ -6,6 +6,9 @@
 
 ## [Unreleased]
 
+### Added
+- Add DeepSeek provider support for the router
+
 ## [0.1.5] - 2026-05-13
 
 ### Fixed
