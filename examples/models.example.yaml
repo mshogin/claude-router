@@ -46,7 +46,8 @@ models:
     context_window: 200000
     max_output_tokens: 65536
 
-  # Example 2: DeepSeek with env var (export DEEPSEEK_API_KEY=...)
+  # Example 2: DeepSeek V3 via DeepSeek API (api.deepseek.com/v1).
+  # Set env: export DEEPSEEK_API_KEY=sk-...
   - id: deepseek-v3
     base_url: https://api.deepseek.com/v1
     model_name: deepseek-chat
@@ -58,6 +59,35 @@ models:
     complexity_max: high
     context_window: 131072
     max_output_tokens: 32768
+
+  # Example 2b: DeepSeek V4 Flash — fast, cost-efficient model.
+  # Override API base via DEEPSEEK_URL env var.
+  - id: deepseek-v4-flash
+    base_url: https://api.deepseek.com/v1
+    model_name: deepseek-v4-flash
+    api_key_env: DEEPSEEK_API_KEY
+    strengths:
+      general: 0.70
+      code: 0.65
+    complexity_max: medium
+    context_window: 131072
+    max_output_tokens: 32768
+    tool_calling: false
+
+  # Example 2c: DeepSeek V4 Pro — strongest DeepSeek reasoning model.
+  # Override API base via DEEPSEEK_URL env var.
+  - id: deepseek-v4-pro
+    base_url: https://api.deepseek.com/v1
+    model_name: deepseek-v4-pro
+    api_key_env: DEEPSEEK_API_KEY
+    strengths:
+      reasoning: 0.90
+      code: 0.85
+      math: 0.90
+    complexity_max: high
+    context_window: 131072
+    max_output_tokens: 65536
+    tool_calling: false
 
   # Example 3: Anthropic via gpg-encrypted secret
   - id: claude-sonnet

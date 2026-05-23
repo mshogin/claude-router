@@ -66,6 +66,18 @@ models:
     model_name: deepseek-chat
     api_key_env: DEEPSEEK_API_KEY          # read from environment
 
+  - id: deepseek-v4-flash
+    base_url: https://api.deepseek.com/v1
+    model_name: deepseek-v4-flash
+    api_key_env: DEEPSEEK_API_KEY
+    # Override API base: export DEEPSEEK_URL=https://custom.endpoint/v1
+
+  - id: deepseek-v4-pro
+    base_url: https://api.deepseek.com/v1
+    model_name: deepseek-v4-pro
+    api_key_env: DEEPSEEK_API_KEY
+    # Override API base: export DEEPSEEK_URL=https://custom.endpoint/v1
+
   - id: claude-sonnet
     base_url: https://api.anthropic.com/v1
     model_name: claude-sonnet-4-6
@@ -95,6 +107,15 @@ After editing the catalog, regenerate the ccr config and restart:
 ~/my/claude-router/bin/build-config.sh && ccr restart
 # or, if you changed timestamps:  FORCE_REBUILD=1 claude-router-reload
 ```
+
+### Environment variables
+
+Models using `api_key_env` read their API key from the corresponding env var. Common ones:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | — | API key for DeepSeek models (V3, V4 Flash, V4 Pro) |
+| `DEEPSEEK_URL` | `https://api.deepseek.com/v1` | Override DeepSeek API base URL (self-hosted or proxy) |
 
 ---
 
