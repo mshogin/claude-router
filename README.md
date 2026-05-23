@@ -87,7 +87,7 @@ Each model declares its output sizing:
 
 `router.js` clamps `max_tokens` per request to
 `min(requested, max_output_tokens, context_window - estimated_input - safety)`,
-floored at 256. Long inputs no longer 400 the provider with `'max_tokens' is too large`.
+floored at 2048. Long inputs no longer 400 the provider with `'max_tokens' is too large`.
 
 After editing the catalog, regenerate the ccr config and restart:
 
@@ -125,18 +125,18 @@ Other helpers:
 
 ---
 
-## What's in the box
+## Architecture
 
 ```
 Claude Code
    |
    v
-[3457] footer-proxy            # tool-call rescue + footer injection
+[3457] footer-proxy            # tool-call rescue + footer injection + system-reminder reshape
    |
    v
 [3456] ccr (claude-code-router by musistudio)
    |
-   |  custom-router.js calls...
+   | lib/router.js calls...
    |--> [8080] promptlint      # extracts prompt features
    v
 OpenAI-compatible LLM pool (any provider)
@@ -154,7 +154,7 @@ Three local services:
 
 ---
 
-## How model selection works
+### How model selection works
 
 Each request passes through `lib/router.js` (running inside ccr):
 
@@ -167,10 +167,22 @@ Each request passes through `lib/router.js` (running inside ccr):
          + (has_code_block||has_code_ref||has_file_path) * strengths.code * w_code
          - max(0, complexity_rank - model.complexity_max_rank) * w_overcapacity
    ```
-4. Pick the argmax. Fall back to `fallback_model` if `promptlint` is unreachable.
-5. Append the decision to `~/.claude-router/logs/decisions.log` so footer-proxy can render the right footer.
+   Models with `tool_calling: false` receive a -100 penalty when the request includes `tools[]`, effectively excluding them from tool-bearing routes while preserving them as a last-resort fallback.
+4. Pick the argmax. Fall back to `fallback_model` if `promptlint` is unreachable or every model is quarantined.
+5. Clamp `max_tokens` to fit the chosen model's `context_window` (see `lib/limits.js` — accounts for `max_output_tokens`, safety margin, and estimated input tokens; floor is 2048).
+6. Append the decision to `~/.claude-router/logs/decisions.log` so footer-proxy can render the right footer.
 
 Tune `strengths` and `scoring_weights` in `models.yaml` until routing matches your preferences. All decisions are logged.
+
+---
+
+### Component details
+
+**`lib/router.js`** (`lib/router.js:166`) — the scoring function registered with ccr via `CUSTOM_ROUTER_PATH`. Called on every `/messages` request. It extracts the last user message text, queries promptlint for features, scores each model via `scoreModel()` (`lib/router.js:111`), clamps `max_tokens` via `effectiveMaxTokens()` from `lib/limits.js`, and writes a JSON decision to `decisions.log`. Config is passed through `_router_meta` embedded in the ccr `config.json` by `bin/build-config.sh`.
+
+**`ccr`** (`@musistudio/claude-code-router`) — the main routing engine. It listens on port 3456, translates Anthropic-format requests to OpenAI-format per-provider, applies transformers (e.g. `cleancache` which strips Anthropic prompt-cache fields), and forwards to the chosen upstream. It loads `lib/router.js` through the `CUSTOM_ROUTER_PATH` config key (`bin/build-config.sh:165`) for model selection but handles all the protocol translation itself.
+
+**`footer-proxy`** (`lib/footer-proxy.js`) — an HTTP proxy on port 3457 that wraps ccr. Besides injecting `[router]...` footers, it handles three critical response transformations: it reshapes `<system-reminder>` tags from user content into the `system[]` array (`lib/footer-proxy.js:292-339`) so non-Anthropic upstreams respect claude rules; it adaptively parses chat-template tool-call markers (e.g. from DeepSeek) into proper SSE `tool_use` blocks (`lib/footer-proxy.js:656-853`); and it drops unsupported content block types (`thinking`, `redacted_thinking`) that Claude Code CLI doesn't understand, with a text fallback when no usable blocks remain (`lib/footer-proxy.js:702-733`). Quarantine state is shared with `router.js` through a JSON file at `~/.claude-router/state/quarantine.json`.
 
 ---
 
