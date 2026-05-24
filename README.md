@@ -2,6 +2,8 @@
 
 Smart per-prompt LLM router for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Pick the best model in your pool for each request, see which one answered via a footer in every reply, and get tool-calling on models that don't natively support it.
 
+> **Note:** agents-platform now uses DeepSeek's native Anthropic endpoint (`api.deepseek.com/anthropic`) — no claude-router proxy needed for DeepSeek-only setups.
+
 ---
 
 ## Quickstart
