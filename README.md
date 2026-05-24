@@ -144,7 +144,7 @@ OpenAI-compatible LLM pool (any provider)
 
 Three local services:
 
-- **`promptlint`** (Go binary, `:8080`) — extracts features from each prompt: `action`, `complexity`, `domain`, `has_code_block`, `has_file_path`, etc. No LLM needed.
+- **`promptlint`** (Go binary, `:8080`) — extracts features from each prompt: `action`, `complexity`, `domain`, `has_code_block`, `has_code_ref`, `has_file_path`, etc. No LLM needed.
 - **`ccr`** (`@musistudio/claude-code-router`, `:3456`) — translates Claude Code's Anthropic API into OpenAI-shape requests, multiplexes across providers. Uses our `lib/router.js` as `CUSTOM_ROUTER_PATH` for scoring.
 - **`footer-proxy`** (Node.js, `:3457`) — sits in front of ccr and:
   - injects a footer (`[router] model · action=... complexity=... domain=...`) into every reply
