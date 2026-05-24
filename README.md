@@ -92,7 +92,7 @@ with a floor of 2048. Long inputs no longer 400 the provider with `'max_tokens' 
 After editing the catalog, regenerate the ccr config and restart:
 
 ```bash
-~/my/claude-router/bin/build-config.sh && ccr restart
+~/claude-router/bin/build-config.sh && ccr restart
 # or, if you changed timestamps:  FORCE_REBUILD=1 claude-router-reload
 ```
 
