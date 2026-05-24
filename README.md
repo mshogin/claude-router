@@ -87,7 +87,7 @@ Each model declares its output sizing:
 
 `router.js` clamps `max_tokens` per request to
 `min(requested, max_output_tokens, context_window - estimated_input - safety)`,
-floored at 2048. Long inputs no longer 400 the provider with `'max_tokens' is too large`.
+with a floor of 2048. Long inputs no longer 400 the provider with `'max_tokens' is too large`.
 
 After editing the catalog, regenerate the ccr config and restart:
 
