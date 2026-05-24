@@ -104,8 +104,8 @@ Three launch modes, pick the one that fits your situation:
 
 | Command | What it does | Personal context (CLAUDE.md / hooks / skills / memory) | macOS Fn+Fn dictation |
 |---|---|---|---|
-| `claude-router-shell` | Lazy-starts the stack, launches `claude` with your full setup | sent to upstream | no |
-| `claude-router-up` then `claude` | Lazy-starts the stack + exports env, you run `claude` yourself | sent to upstream | yes |
+| `claude-router-shell` | Lazy-starts the stack, launches `claude` with your full setup | sent upstream | no |
+| `claude-router-up` then `claude` | Lazy-starts the stack + exports env, you run `claude` yourself | sent upstream | yes |
 | `claude-router-clean` | Lazy-starts the stack, launches `claude --bare --strict-mcp-config --setting-sources ""` | none — fully isolated | no |
 
 Use `claude-router-clean` when you don't want personal context, memory, or skills to reach the upstream pool (e.g. a corporate or shared LLM provider).
