@@ -1,5 +1,7 @@
 # claude-router
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 Smart per-prompt LLM router for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Pick the best model in your pool for each request, see which one answered via a footer in every reply, and get tool-calling on models that don't natively support it.
 
 > **Note:** agents-platform now uses DeepSeek's native Anthropic endpoint (`api.deepseek.com/anthropic`) — no claude-router proxy needed for DeepSeek-only setups.
