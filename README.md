@@ -219,7 +219,7 @@ examples/
 
 ---
 
-## Acknowledgements
+## Acknowledgments
 
 - [`@musistudio/claude-code-router`](https://github.com/musistudio/claude-code-router) — the underlying multi-provider router and transformer pipeline.
 - [`promptlint`](https://github.com/mshogin/promptlint) — prompt feature extraction (Go).
