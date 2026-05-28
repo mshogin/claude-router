@@ -9,6 +9,9 @@
 ### Added
 - Add DeepSeek provider support for the router
 
+### Fixed
+- `shell/claude-router.zsh` — `_claude_router_export_env` выставляет `ANTHROPIC_AUTH_TOKEN` (Bearer) вместо `ANTHROPIC_API_KEY`. Claude Code 2.1+ показывает экран логина при кастомном `ANTHROPIC_BASE_URL`, если задан только `API_KEY`; для не-Anthropic endpoint нужен auth-token. `API_KEY` снимается, чтобы не было warning "Auth conflict". (--bare режим не поддерживается.)
+
 ## [0.1.5] - 2026-05-13
 
 ### Fixed

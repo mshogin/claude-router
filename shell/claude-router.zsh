@@ -64,16 +64,16 @@ _claude_router_restart_debug() {
 # Export router-pointed Anthropic env into the current shell. Strips any
 # corporate HTTP(S)_PROXY so claude itself talks to localhost directly.
 #
-# Only ANTHROPIC_API_KEY is set, not ANTHROPIC_AUTH_TOKEN: claude v2.1+
-# warns "Auth conflict" when both are set, and --bare mode strictly
-# requires ANTHROPIC_API_KEY anyway. ANTHROPIC_AUTH_TOKEN is also unset
-# proactively in case the user had it from an earlier session.
+# Use ANTHROPIC_AUTH_TOKEN (Bearer) for the custom router endpoint. claude
+# v2.1+ shows the login screen when only ANTHROPIC_API_KEY is set against a
+# non-Anthropic base_url. ANTHROPIC_API_KEY is unset to avoid the "Auth
+# conflict" warning when both are present. (--bare mode is not used here.)
 _claude_router_export_env() {
   export ANTHROPIC_BASE_URL=http://localhost:3457
-  export ANTHROPIC_API_KEY=not-needed
+  export ANTHROPIC_AUTH_TOKEN=not-needed
   export API_TIMEOUT_MS=600000
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-  unset ANTHROPIC_AUTH_TOKEN
+  unset ANTHROPIC_API_KEY
   unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
 }
 
