@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-06-05
+
 ### Added
 - Add DeepSeek provider support for the router
 - `bin/run.sh` — sync `models.yaml` from `REPO_MODELS_YAML` into the runtime config dir before the staleness check (opt out with `CR_LOCAL_MODELS=1`); skipped when unset, fully backward-compatible.
