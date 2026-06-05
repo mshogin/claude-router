@@ -83,6 +83,25 @@ echo "=== claude-router stack ==="
 CONFIG_JSON="${CCR_DIR:-${HOME}/.claude-code-router}/config.json"
 MODELS_YAML="${CONFIG_DIR}/models.yaml"
 
+# Sync models.yaml from the versioned source-of-truth into CONFIG_DIR (the
+# runtime location build-config.sh reads) BEFORE the staleness check below, so
+# a fresh copy correctly triggers a rebuild.
+#
+# Source-of-truth = the repo-tracked models.yaml, path given by REPO_MODELS_YAML.
+# If unset (generic OSS checkout), the sync is skipped and CONFIG_DIR/models.yaml
+# is used as-is - fully backward compatible.
+#
+# Opt out with CR_LOCAL_MODELS=1 to edit ${CONFIG_DIR}/models.yaml directly for
+# local experiments without it being overwritten on the next start.
+REPO_MODELS_YAML="${REPO_MODELS_YAML:-}"
+if [ "${CR_LOCAL_MODELS:-0}" != "1" ] && [ -n "${REPO_MODELS_YAML}" ] \
+   && [ -f "${REPO_MODELS_YAML}" ] && [ "${REPO_MODELS_YAML}" != "${MODELS_YAML}" ]; then
+  if ! cmp -s "${REPO_MODELS_YAML}" "${MODELS_YAML}" 2>/dev/null; then
+    echo "[sync] models.yaml: ${REPO_MODELS_YAML} -> ${MODELS_YAML} (set CR_LOCAL_MODELS=1 to skip)"
+    cp "${REPO_MODELS_YAML}" "${MODELS_YAML}"
+  fi
+fi
+
 NEED_REBUILD=0
 if [ ! -f "${CONFIG_JSON}" ]; then
   NEED_REBUILD=1
@@ -132,6 +151,22 @@ else
 fi
 
 # 3) ccr - corporate proxy env stripped (some upstreams must be reached directly).
+
+# Patch ccr cli.js: add stream_options.include_usage=true to OpenAI-stream
+# requests so the upstream returns real usage (prompt_tokens, completion_tokens)
+# in the final SSE chunk. Without it usage is always null -> in the Anthropic
+# stream input_tokens/output_tokens=0 -> metrics get only chars (not tokens).
+#
+# Idempotent: skip if the patch is already applied (grep on our marker).
+CCR_CLI_JS="${CONFIG_DIR}/node_modules/@musistudio/claude-code-router/dist/cli.js"
+if [ -f "${CCR_CLI_JS}" ] && ! grep -q 'cr_include_usage_patch' "${CCR_CLI_JS}"; then
+  echo "[patch] ccr cli.js: enabling stream_options.include_usage for upstream usage tokens"
+  # Replace 'stream:!0' -> 'stream:!0,stream_options:{include_usage:!0}' + marker comment.
+  # !0 in minified JS = true.
+  sed -i.bak 's/stream:!0,/stream:!0,stream_options:{include_usage:!0},/g; 1s|^|/*cr_include_usage_patch*/|' "${CCR_CLI_JS}"
+  echo "[patch] ccr cli.js patched (backup at ${CCR_CLI_JS}.bak)"
+fi
+
 "${CCR_BIN}" stop >/dev/null 2>&1 || true
 sleep 1
 # Subshell + </dev/null - see promptlint section above for why no nohup.

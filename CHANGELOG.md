@@ -8,6 +8,8 @@
 
 ### Added
 - Add DeepSeek provider support for the router
+- `bin/run.sh` — sync `models.yaml` from `REPO_MODELS_YAML` into the runtime config dir before the staleness check (opt out with `CR_LOCAL_MODELS=1`); skipped when unset, fully backward-compatible.
+- `bin/run.sh` — idempotently patch ccr `cli.js` to add `stream_options.include_usage=true` on OpenAI-stream requests, so the upstream returns real usage (prompt/completion tokens) in the final SSE chunk instead of null.
 
 ### Fixed
 - `shell/claude-router.zsh` — `_claude_router_export_env` выставляет `ANTHROPIC_AUTH_TOKEN` (Bearer) вместо `ANTHROPIC_API_KEY`. Claude Code 2.1+ показывает экран логина при кастомном `ANTHROPIC_BASE_URL`, если задан только `API_KEY`; для не-Anthropic endpoint нужен auth-token. `API_KEY` снимается, чтобы не было warning "Auth conflict". (--bare режим не поддерживается.)
