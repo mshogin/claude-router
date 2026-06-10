@@ -163,7 +163,9 @@ if [ -f "${CCR_CLI_JS}" ] && ! grep -q 'cr_include_usage_patch' "${CCR_CLI_JS}";
   echo "[patch] ccr cli.js: enabling stream_options.include_usage for upstream usage tokens"
   # Replace 'stream:!0' -> 'stream:!0,stream_options:{include_usage:!0}' + marker comment.
   # !0 in minified JS = true.
-  sed -i.bak 's/stream:!0,/stream:!0,stream_options:{include_usage:!0},/g; 1s|^|/*cr_include_usage_patch*/|' "${CCR_CLI_JS}"
+  # Marker goes on line 2: line 1 is the '#!/usr/bin/env node' shebang and
+  # .bin/ccr symlinks straight to this file - anything before '#!' breaks exec.
+  sed -i.bak 's/stream:!0,/stream:!0,stream_options:{include_usage:!0},/g; 2s|^|/*cr_include_usage_patch*/|' "${CCR_CLI_JS}"
   echo "[patch] ccr cli.js patched (backup at ${CCR_CLI_JS}.bak)"
 fi
 
