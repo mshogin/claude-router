@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-10
+
+### Fixed
+- `bin/run.sh` — the `cr_include_usage_patch` marker was inserted *before* line 1 of `dist/cli.js` (the `#!/usr/bin/env node` shebang). Since `node_modules/.bin/ccr` symlinks straight to that file, the kernel no longer recognized it as a node script and `ccr` failed to start on every clean install of v0.1.6. Marker now goes on line 2 — the shebang stays intact and the idempotency `grep` check still works. (#7, thanks @Andreu007)
+
 ## [0.1.6] - 2026-06-05
 
 ### Added
